@@ -17,7 +17,7 @@ function tone(freq,when=0,length=.18){if(muted||!audioCtx)return;let osc=audioCt
 function babyCry(){if(muted||!audioCtx)return;for(let i=0;i<3;i++){let o=audioCtx.createOscillator(),g=audioCtx.createGain(),t=audioCtx.currentTime+i*.5;o.type='triangle';o.connect(g);g.connect(audioCtx.destination);o.frequency.setValueAtTime(630,t);o.frequency.linearRampToValueAtTime(850,t+.15);o.frequency.linearRampToValueAtTime(480,t+.4);g.gain.setValueAtTime(.001,t);g.gain.linearRampToValueAtTime(.045,t+.06);g.gain.exponentialRampToValueAtTime(.001,t+.42);o.start(t);o.stop(t+.45)}}
 function audioStart(){try{audioCtx??=new (window.AudioContext||window.webkitAudioContext)();audioCtx.resume()}catch(e){}if(window.speechSynthesis)window.speechSynthesis.cancel();tone(660,0);tone(880,.22);speak('Bonjour. This is the final call for our flight to the French Riviera. We are ready to welcome you at gate B twelve.','en-US','boarding');}
 $('#mute').onclick=()=>{muted=!muted;$('#mute').textContent=muted?'♪̸':'♫';$('#mute').setAttribute('aria-label',muted?'Unmute audio':'Mute audio');if(muted){if(window.speechSynthesis)window.speechSynthesis.cancel();if(audioCtx)audioCtx.suspend()}else if(audioCtx)audioCtx.resume()};
-$('#answer').onclick=()=>{$('#phone').classList.add('hidden');speak('Yes, Mum, I have it! I am running. Call you when I land.','en-US','camille');toast('Camille: “Oui maman. Boarding now. Probably.”')};
+$('#answer').onclick=()=>{$('#phone').classList.add('hidden');if(window.speechSynthesis)window.speechSynthesis.cancel();callUntil=0;speak('Yes, Mum, I have it! I am running. Call you when I land.','en-US','camille');toast('Camille: “Oui maman. Boarding now. Probably.”')};
 
 let objects=[];
 for(let i=0;i<30;i++){let depth=25+i*10.3;let type=i%7===3?'stroller':i%7===5?'coffee':i%4===2?'person':'case';objects.push({z:depth,x:[-3.2,0,3.2][(i*7+i%3)%3],type,phase:i*2.13,hit:false,color:['#c86b43','#417a78','#d8b35c','#b58182'][i%4]})}
@@ -80,8 +80,8 @@ if(o.type==='coffee'){if(Math.abs(z-o.z)<1.3&&Math.abs(x-ox)<radius&&jump<.3){sl
 if(nextZ>o.z-.95&&z<o.z+.95&&(Math.abs(x-ox)<radius||(o.type==='stroller'&&Math.abs(x-(ox+1.25))<.82))&&jump<(o.type==='case'?1.18:2.5)){nextZ=Math.min(nextZ,Math.max(z,o.z-.95));if(clock-lastBump>1.6){lastBump=clock;bumps++;toast(o.type==='stroller'?'Baby on board! Go around the stroller.':'Blocked! Move sideways to get around.');tone(170,0,.12)}}}
 z=nextZ;
 if(!babyHeard&&z>12){babyHeard=true;babyCry();toast('Someone else is also having a very long day…')}
-if(!phoneShown&&z>95){phoneShown=true;callUntil=elapsed+7;$('#phone').classList.remove('hidden');tone(740);tone(990,.18);tone(740,.4);tone(990,.58);speak('Camille, darling. Where are you? Have you got your passport?')}
-if(phoneShown&&elapsed>callUntil)$('#phone').classList.add('hidden');
+if(!phoneShown&&z>95){phoneShown=true;callUntil=elapsed+7;$('#phone').classList.remove('hidden');if(window.speechSynthesis)window.speechSynthesis.cancel();speak('Camille, darling. Where are you? Have you got your passport?')}
+if(phoneShown&&callUntil>0&&elapsed>callUntil){$('#phone').classList.add('hidden');callUntil=0;if(window.speechSynthesis)window.speechSynthesis.cancel();}
 $('#distance').innerHTML=`${Math.max(0,Math.ceil(finish-z))}<em>m</em>`;$('#timer').textContent=`00:${String(Math.max(0,Math.ceil(duration-elapsed))).padStart(2,'0')}`;$('#progress').style.width=`${Math.min(100,z/finish*100)}%`;if(elapsed>=duration)end(false);else if(z>=finish)end(true)}
 function frame(now){let dt=Math.min(.05,(now-last)/1000);last=now;update(dt);draw();requestAnimationFrame(frame)}requestAnimationFrame(frame);
 window.gameState=()=>({mode,z,x,jump,elapsed,bumps,remaining:duration-elapsed});
